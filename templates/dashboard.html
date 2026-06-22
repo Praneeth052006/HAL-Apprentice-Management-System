@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard · ApprenticeTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+
+<!-- ───────────── SIDEBAR ───────────── -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+    </div>
+    <div class="brand-name">ApprenticeTrack</div>
+    <div class="brand-sub">HAL Attendance System</div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-label">Main</div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Apprentices
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Attendance
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-label">Account</div>
+    <a href="/logout" class="nav-item" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="avatar-sm" id="sidebarInitials">U</div>
+    <div>
+      <div class="sidebar-user-name" id="sidebarUserName">{{ user_name or 'User' }}</div>
+      <div class="sidebar-user-role">Mentor</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ───────────── MAIN ───────────── -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1>Dashboard</h1>
+      <p>Manage apprentices, track attendance, punch in/out</p>
+    </div>
+    <div class="topbar-right">
+      <div class="live-clock">
+        <div class="live-clock-time" id="liveClockTime">--:--:--</div>
+        <div class="live-clock-date" id="liveClockDate">—</div>
+      </div>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" type="text" placeholder="Search by name or dept…" oninput="filterStudents()" />
+      </div>
+      <button class="btn-primary" onclick="openModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Student
+      </button>
+      <a href="/logout" class="btn-logout">Logout</a>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <section class="content">
+
+    <!-- STATS -->
+    <div class="stats-row" id="statsRow"><!-- rendered by JS --></div>
+
+    <!-- TABLE -->
+    <div class="section-header">
+      <div class="section-title">Apprentices</div>
+      <div class="filter-tabs">
+        <div class="tab active" onclick="setTab(this,'All')">All</div>
+        <div class="tab" onclick="setTab(this,'Active')">Active</div>
+        <div class="tab" onclick="setTab(this,'At Risk')">At Risk</div>
+        <div class="tab" onclick="setTab(this,'Critical')">Critical</div>
+        <div class="tab" onclick="setTab(this,'Completed')">Completed</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Apprenticeship Period</th>
+            <th>Progress</th>
+            <th>Attendance</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="studentTable">
+          <tr class="loading-row"><td colspan="6">Loading apprentices…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <section class="detail-section">
+      <div class="section-header">
+        <div class="section-title" id="detailTitle">Student Detail View</div>
+        <div style="font-size:12px;color:var(--text3);" id="detailHint">Click "View" on any row to load details</div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-card" id="periodCard">
+          <div class="punch-select-prompt">Select a student to view period details</div>
+        </div>
+        <div class="detail-card" id="attendCard">
+          <div class="punch-select-prompt">Select a student to view attendance details</div>
+        </div>
+        <div class="detail-card" id="punchCard">
+          <div class="punch-select-prompt">Select a student to punch in / out</div>
+        </div>
+      </div>
+    </section>
+
+  </section>
+</main>
+
+<!-- ───────────── ADD STUDENT MODAL ───────────── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title">
+      Add New Student
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-error" id="modalError"></div>
+
+    <div class="form-row">
+      <label class="form-label" for="inp-name">Full Name</label>
+      <input class="form-input" id="inp-name" type="text" placeholder="e.g. Aisha Khan" />
+    </div>
+
+    <div class="form-row">
+      <label class="form-label" for="inp-dept">Department</label>
+      <input class="form-input" id="inp-dept" type="text" placeholder="e.g. Avionics" />
+    </div>
+
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-label" for="inp-start">Start Date</label>
+        <input class="form-input" id="inp-start" type="date" />
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="inp-end">End Date</label>
+        <input class="form-input" id="inp-end" type="date" />
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-label" for="inp-present">Present Days (so far)</label>
+        <input class="form-input" id="inp-present" type="number" min="0" placeholder="0" />
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="inp-total">Total Working Days</label>
+        <input class="form-input" id="inp-total" type="number" min="1" placeholder="e.g. 120" />
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitStudentForm()">Save Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">Saved</div>
+
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
